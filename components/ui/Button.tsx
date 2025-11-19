@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'success' | 'danger' | 'ghost' | 'outline';
+  variant?: 'primary' | 'success' | 'danger' | 'warning' | 'ghost' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
 }
@@ -23,6 +23,7 @@ export default function Button({
     primary: 'bg-primary-500 hover:bg-primary-600 text-white',
     success: 'bg-success hover:bg-emerald-600 text-white',
     danger: 'bg-danger hover:bg-red-600 text-white',
+    warning: 'bg-warning hover:bg-amber-600 text-white',
     ghost: 'bg-transparent hover:bg-dark-card text-dark-text',
     outline: 'border border-dark-border hover:bg-dark-card text-dark-text',
   };
