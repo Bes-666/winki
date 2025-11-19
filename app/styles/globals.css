@@ -12,10 +12,6 @@
   body {
     @apply bg-dark-bg text-dark-text font-sans antialiased;
   }
-  
-  html {
-    @apply dark;
-  }
 }
 
 @layer components {
