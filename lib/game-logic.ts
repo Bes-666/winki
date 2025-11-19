@@ -327,7 +327,13 @@ export async function getPortfolioStats(investorId: string) {
     .eq('investor_id', investorId);
 
   if (error || !portfolios) {
-    return { totalValue: 0, totalProfit: 0, items: [] };
+    return { 
+      totalValue: 0, 
+      totalCost: 0,
+      totalProfit: 0, 
+      totalProfitPercent: 0,
+      items: [] 
+    };
   }
 
   let totalValue = 0;
