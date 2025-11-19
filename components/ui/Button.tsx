@@ -1,17 +1,12 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, HTMLMotionProps } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
-type ButtonHTMLProps = Omit<
-  React.ButtonHTMLAttributes<HTMLButtonElement>,
-  'onAnimationStart' | 'onAnimationEnd' | 'onAnimationIteration'
->;
-
-interface ButtonProps extends ButtonHTMLProps {
+type ButtonProps = HTMLMotionProps<'button'> & {
   variant?: 'primary' | 'success' | 'danger' | 'warning' | 'ghost' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
-}
+};
 
 export default function Button({
   children,
