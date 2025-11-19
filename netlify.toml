@@ -2,6 +2,7 @@
   command = "npm run build"
   functions = "netlify/functions"
   publish = ".next"
+  environment = { SECRETS_SCAN_OMIT_KEYS = "SUPABASE_ANON_KEY,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_URL,NEXT_PUBLIC_SUPABASE_URL" }
 
 [[redirects]]
   from = "/api/*"
@@ -9,6 +10,6 @@
   status = 200
 
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "20"
 
 
