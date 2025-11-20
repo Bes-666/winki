@@ -1,53 +1,61 @@
 'use client';
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useState } from 'react';
+import CandlestickChart from './CandlestickChart';
+import DepthChart from './DepthChart';
+import TradeHistory from './TradeHistory';
+import { BarChart3, TrendingUp, Layers } from 'lucide-react';
 
 interface PriceChartProps {
   data?: Array<{ time: string; price: number }>;
+  skillName?: string;
 }
 
-const mockData = [
-  { time: '00:00', price: 120 },
-  { time: '04:00', price: 125 },
-  { time: '08:00', price: 130 },
-  { time: '12:00', price: 128 },
-  { time: '16:00', price: 135 },
-  { time: '20:00', price: 140 },
-];
+export default function PriceChart({ data, skillName }: PriceChartProps) {
+  const [chartType, setChartType] = useState<'candlestick' | 'depth'>('candlestick');
 
-export default function PriceChart({ data = mockData }: PriceChartProps) {
   return (
-    <ResponsiveContainer width="100%" height={300}>
-      <LineChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#2a2f4a" />
-        <XAxis 
-          dataKey="time" 
-          stroke="#94a3b8"
-          style={{ fontSize: '12px' }}
-        />
-        <YAxis 
-          stroke="#94a3b8"
-          style={{ fontSize: '12px' }}
-        />
-        <Tooltip
-          contentStyle={{
-            backgroundColor: '#1a1f3a',
-            border: '1px solid #2a2f4a',
-            borderRadius: '8px',
-            color: '#e2e8f0',
-          }}
-          labelStyle={{ color: '#e2e8f0' }}
-          formatter={(value: number) => [`$${value.toFixed(2)}`, 'Price']}
-        />
-        <Line 
-          type="monotone" 
-          dataKey="price" 
-          stroke="#0ea5e9" 
-          strokeWidth={2}
-          dot={false}
-        />
-      </LineChart>
-    </ResponsiveContainer>
+    <div className="space-y-4">
+      {/* Переключатель типа графика */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setChartType('candlestick')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+            chartType === 'candlestick'
+              ? 'bg-primary-500 text-white'
+              : 'bg-dark-card text-dark-muted hover:text-dark-text'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4" />
+          Candlestick
+        </button>
+        <button
+          onClick={() => setChartType('depth')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+            chartType === 'depth'
+              ? 'bg-primary-500 text-white'
+              : 'bg-dark-card text-dark-muted hover:text-dark-text'
+          }`}
+        >
+          <Layers className="w-4 h-4" />
+          Depth
+        </button>
+      </div>
+
+      {/* График */}
+      <div className="bg-dark-card rounded-lg p-4">
+        {chartType === 'candlestick' ? (
+          <CandlestickChart skillName={skillName} height={500} />
+        ) : (
+          <DepthChart height={400} />
+        )}
+      </div>
+
+      {/* История сделок */}
+      <div className="bg-dark-card rounded-lg p-4">
+        <TradeHistory />
+      </div>
+    </div>
   );
 }
 

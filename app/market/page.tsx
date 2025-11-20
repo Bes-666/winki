@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Card from '@/components/ui/Card';
+import Badge from '@/components/ui/Badge';
 import MarketTable from '@/components/market/MarketTable';
 import PriceChart from '@/components/market/PriceChart';
 import TradingPanel from '@/components/market/TradingPanel';
@@ -43,10 +44,15 @@ export default function MarketPage() {
         </div>
       </div>
 
-      {/* Price Chart */}
+      {/* Price Chart с китайскими свечами */}
       <Card>
-        <h2 className="text-xl font-bold mb-4">Price Chart</h2>
-        <PriceChart />
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">Price Chart</h2>
+          {selectedSkill && (
+            <Badge variant="info">Live</Badge>
+          )}
+        </div>
+        <PriceChart skillName={selectedSkill || 'Select a skill'} />
       </Card>
     </div>
   );

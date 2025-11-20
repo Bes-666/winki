@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, Search, Filter, ArrowUpDown } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { cn, formatCurrency, formatPercentage } from '@/lib/utils';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
+import Badge from '@/components/ui/Badge';
 
 interface MarketRow {
   id: string;
@@ -23,6 +25,8 @@ export default function MarketTable() {
   const [sortBy, setSortBy] = useState<keyof MarketRow>('market_cap');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterChange, setFilterChange] = useState<'all' | 'gainers' | 'losers'>('all');
 
   useEffect(() => {
     loadMarketData();
@@ -99,14 +103,37 @@ export default function MarketTable() {
     }
   };
 
-  const sortedData = [...data].sort((a, b) => {
-    const aVal = a[sortBy];
-    const bVal = b[sortBy];
-    if (sortOrder === 'asc') {
-      return aVal > bVal ? 1 : -1;
+  // Фильтрация и сортировка данных
+  const filteredAndSortedData = useMemo(() => {
+    let filtered = [...data];
+
+    // Поиск
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (row) =>
+          row.skill_name.toLowerCase().includes(query) ||
+          row.owner.toLowerCase().includes(query)
+      );
     }
-    return aVal < bVal ? 1 : -1;
-  });
+
+    // Фильтр по изменению
+    if (filterChange === 'gainers') {
+      filtered = filtered.filter((row) => row.change24h > 0);
+    } else if (filterChange === 'losers') {
+      filtered = filtered.filter((row) => row.change24h < 0);
+    }
+
+    // Сортировка
+    return filtered.sort((a, b) => {
+      const aVal = a[sortBy];
+      const bVal = b[sortBy];
+      if (sortOrder === 'asc') {
+        return aVal > bVal ? 1 : -1;
+      }
+      return aVal < bVal ? 1 : -1;
+    });
+  }, [data, searchQuery, filterChange, sortBy, sortOrder]);
 
   if (loading) {
     return (
@@ -117,44 +144,142 @@ export default function MarketTable() {
   }
 
   return (
-    <Table>
-      <TableHeader>
+    <div className="space-y-4">
+      {/* Поиск и фильтры */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-muted" />
+            <Input
+              type="text"
+              placeholder="Search skills or owners..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setFilterChange('all')}
+            className={cn(
+              'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+              filterChange === 'all'
+                ? 'bg-primary-500 text-white'
+                : 'bg-dark-card text-dark-muted hover:text-dark-text'
+            )}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setFilterChange('gainers')}
+            className={cn(
+              'px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1',
+              filterChange === 'gainers'
+                ? 'bg-success text-white'
+                : 'bg-dark-card text-dark-muted hover:text-dark-text'
+            )}
+          >
+            <TrendingUp className="w-4 h-4" />
+            Gainers
+          </button>
+          <button
+            onClick={() => setFilterChange('losers')}
+            className={cn(
+              'px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1',
+              filterChange === 'losers'
+                ? 'bg-danger text-white'
+                : 'bg-dark-card text-dark-muted hover:text-dark-text'
+            )}
+          >
+            <TrendingDown className="w-4 h-4" />
+            Losers
+          </button>
+        </div>
+      </div>
+
+      {/* Статистика */}
+      <div className="flex items-center justify-between text-sm text-dark-muted">
+        <span>
+          Showing {filteredAndSortedData.length} of {data.length} skills
+        </span>
+        {searchQuery && (
+          <Badge variant="info" size="sm">
+            Search: "{searchQuery}"
+          </Badge>
+        )}
+      </div>
+
+      <Table>
+        <TableHeader>
         <TableRow>
           <TableHead 
             className="cursor-pointer hover:text-dark-text"
             onClick={() => handleSort('skill_name')}
           >
-            Skill
+            <div className="flex items-center gap-1">
+              Skill
+              {sortBy === 'skill_name' && (
+                <ArrowUpDown className={cn('w-3 h-3', sortOrder === 'asc' ? 'rotate-180' : '')} />
+              )}
+            </div>
           </TableHead>
           <TableHead 
             className="text-right cursor-pointer hover:text-dark-text"
             onClick={() => handleSort('price')}
           >
-            Price
+            <div className="flex items-center justify-end gap-1">
+              Price
+              {sortBy === 'price' && (
+                <ArrowUpDown className={cn('w-3 h-3', sortOrder === 'asc' ? 'rotate-180' : '')} />
+              )}
+            </div>
           </TableHead>
           <TableHead 
             className="text-right cursor-pointer hover:text-dark-text"
             onClick={() => handleSort('change24h')}
           >
-            24h Change
+            <div className="flex items-center justify-end gap-1">
+              24h Change
+              {sortBy === 'change24h' && (
+                <ArrowUpDown className={cn('w-3 h-3', sortOrder === 'asc' ? 'rotate-180' : '')} />
+              )}
+            </div>
           </TableHead>
           <TableHead 
             className="text-right cursor-pointer hover:text-dark-text"
             onClick={() => handleSort('volume')}
           >
-            Volume
+            <div className="flex items-center justify-end gap-1">
+              Volume
+              {sortBy === 'volume' && (
+                <ArrowUpDown className={cn('w-3 h-3', sortOrder === 'asc' ? 'rotate-180' : '')} />
+              )}
+            </div>
           </TableHead>
           <TableHead 
             className="text-right cursor-pointer hover:text-dark-text"
             onClick={() => handleSort('market_cap')}
           >
-            Market Cap
+            <div className="flex items-center justify-end gap-1">
+              Market Cap
+              {sortBy === 'market_cap' && (
+                <ArrowUpDown className={cn('w-3 h-3', sortOrder === 'asc' ? 'rotate-180' : '')} />
+              )}
+            </div>
           </TableHead>
           <TableHead className="text-right">Action</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {sortedData.map((row, index) => (
+        {filteredAndSortedData.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={6} className="text-center py-8 text-dark-muted">
+              No skills found
+            </TableCell>
+          </TableRow>
+        ) : (
+          filteredAndSortedData.map((row, index) => (
           <motion.tr
             key={row.id}
             initial={{ opacity: 0 }}
@@ -196,9 +321,11 @@ export default function MarketTable() {
               </Button>
             </TableCell>
           </motion.tr>
-        ))}
+          ))
+        )}
       </TableBody>
     </Table>
+    </div>
   );
 }
 
