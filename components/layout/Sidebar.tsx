@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const navItems = [
   { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -32,7 +32,34 @@ const adminItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const isAdmin = pathname?.startsWith('/admin');
+  const [isAdmin, setIsAdmin] = useState(false);
+  
+  // Проверяем, действительно ли пользователь админ (только на админ-страницах)
+  useEffect(() => {
+    const checkAdminAccess = async () => {
+      if (pathname?.startsWith('/admin')) {
+        const adminToken = localStorage.getItem('admin_token');
+        if (adminToken) {
+          try {
+            const response = await fetch('/api/admin/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token: adminToken }),
+            });
+            setIsAdmin(response.ok);
+          } catch {
+            setIsAdmin(false);
+          }
+        } else {
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+    };
+
+    checkAdminAccess();
+  }, [pathname]);
 
   return (
     <>

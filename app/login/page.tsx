@@ -19,10 +19,14 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Проверяем, нужно ли перенаправить в админку
+  // Админ-вход доступен только через прямой URL с параметром
   useEffect(() => {
     const redirect = searchParams.get('redirect');
     if (redirect === 'admin') {
       setLoginType('admin');
+    } else {
+      // По умолчанию показываем только User, админ-опция скрыта
+      setLoginType('user');
     }
   }, [searchParams]);
 
@@ -95,41 +99,43 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Переключатель типа входа */}
-          <div className="flex gap-2 mb-6 p-1 bg-dark-card rounded-lg">
-            <button
-              onClick={() => {
-                setLoginType('user');
-                setError('');
-                setUsername('');
-                setPassword('');
-              }}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                loginType === 'user'
-                  ? 'bg-primary-500 text-white'
-                  : 'text-dark-muted hover:text-dark-text'
-              }`}
-            >
-              <User className="w-4 h-4 inline mr-2" />
-              User
-            </button>
-            <button
-              onClick={() => {
-                setLoginType('admin');
-                setError('');
-                setUsername('');
-                setPassword('');
-              }}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                loginType === 'admin'
-                  ? 'bg-primary-500 text-white'
-                  : 'text-dark-muted hover:text-dark-text'
-              }`}
-            >
-              <Shield className="w-4 h-4 inline mr-2" />
-              Admin
-            </button>
-          </div>
+          {/* Переключатель типа входа - показываем админ только если есть redirect=admin */}
+          {searchParams.get('redirect') === 'admin' && (
+            <div className="flex gap-2 mb-6 p-1 bg-dark-card rounded-lg">
+              <button
+                onClick={() => {
+                  setLoginType('user');
+                  setError('');
+                  setUsername('');
+                  setPassword('');
+                }}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  loginType === 'user'
+                    ? 'bg-primary-500 text-white'
+                    : 'text-dark-muted hover:text-dark-text'
+                }`}
+              >
+                <User className="w-4 h-4 inline mr-2" />
+                User
+              </button>
+              <button
+                onClick={() => {
+                  setLoginType('admin');
+                  setError('');
+                  setUsername('');
+                  setPassword('');
+                }}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  loginType === 'admin'
+                    ? 'bg-primary-500 text-white'
+                    : 'text-dark-muted hover:text-dark-text'
+                }`}
+              >
+                <Shield className="w-4 h-4 inline mr-2" />
+                Admin
+              </button>
+            </div>
+          )}
 
           {/* Форма входа */}
           <form onSubmit={handleLogin} className="space-y-4">
