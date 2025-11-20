@@ -1,20 +1,28 @@
 'use client';
 
-import { Bell, Settings, User } from 'lucide-react';
+import { Bell, Settings, User, LogIn, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/utils';
 
 export default function Header() {
   const [balance, setBalance] = useState<number>(0);
   const [isLive, setIsLive] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     // Загрузка баланса пользователя (пока заглушка)
     // В реальном приложении нужно получать из контекста или пропсов
     setBalance(1000);
-  }, []);
+
+    // Проверяем, авторизован ли админ
+    const adminToken = localStorage.getItem('admin_token');
+    setIsAdmin(!!adminToken);
+  }, [pathname]);
 
   return (
     <header className="glass-effect border-b border-dark-border px-6 py-4">
@@ -70,6 +78,30 @@ export default function Header() {
             <User className="w-5 h-5" />
             <span className="hidden md:block">Profile</span>
           </motion.button>
+
+          {isAdmin ? (
+            <Link href="/admin">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 rounded-lg transition-colors"
+              >
+                <Shield className="w-5 h-5" />
+                <span className="hidden md:block">Admin</span>
+              </motion.button>
+            </Link>
+          ) : (
+            <Link href="/login">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+              >
+                <LogIn className="w-5 h-5" />
+                <span className="hidden md:block">Login</span>
+              </motion.button>
+            </Link>
+          )}
         </div>
       </div>
     </header>
