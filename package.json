@@ -13,6 +13,8 @@
   "dependencies": {
     "@netlify/functions": "^2.4.0",
     "@supabase/supabase-js": "^2.38.4",
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^3.0.3",
     "clsx": "^2.0.0",
     "date-fns": "^2.30.0",
     "framer-motion": "^10.16.16",
