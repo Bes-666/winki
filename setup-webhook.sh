@@ -8,7 +8,7 @@ NETLIFY_URL=$2
 
 if [ -z "$BOT_TOKEN" ] || [ -z "$NETLIFY_URL" ]; then
   echo "Использование: ./setup-webhook.sh YOUR_BOT_TOKEN YOUR_NETLIFY_URL"
-  echo "Пример: ./setup-webhook.sh 7561238716:AAFa5_Ub7apYpni03jRCna2i7W9PXEVJfco https://winki-123.netlify.app"
+  echo "Пример: ./setup-webhook.sh YOUR_BOT_TOKEN https://your-site.netlify.app"
   exit 1
 fi
 

@@ -20,7 +20,7 @@ https://api.telegram.org/botYOUR_BOT_TOKEN/setWebhook?url=https://YOUR_NETLIFY_U
 
 **Пример:**
 ```
-https://api.telegram.org/bot7561238716:AAFa5_Ub7apYpni03jRCna2i7W9PXEVJfco/setWebhook?url=https://winki-123.netlify.app/api/webhook
+https://api.telegram.org/botYOUR_BOT_TOKEN/setWebhook?url=https://your-site.netlify.app/api/webhook
 ```
 
 ### Шаг 3: Проверьте Webhook
