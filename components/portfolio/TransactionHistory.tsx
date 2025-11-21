@@ -5,6 +5,7 @@ import { formatCurrency, formatNumber } from '@/lib/utils';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import Badge from '@/components/ui/Badge';
 import { supabase } from '@/lib/supabase';
+import { useUser } from '@/contexts/UserContext';
 
 interface Transaction {
   id: string;
@@ -17,18 +18,22 @@ interface Transaction {
 }
 
 export default function TransactionHistory() {
+  const { user } = useUser();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadTransactions();
-  }, []);
+    if (user) {
+      loadTransactions();
+    }
+  }, [user]);
 
   const loadTransactions = async () => {
+    if (!user) return;
+    
     try {
       setLoading(true);
-      // TODO: Получать investor_id из контекста/сессии
-      const investorId = 'user-id-placeholder';
+      const investorId = user.id;
 
       const { data, error } = await supabase
         .from('transactions')

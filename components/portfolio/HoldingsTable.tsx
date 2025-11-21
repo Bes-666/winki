@@ -8,6 +8,7 @@ import { formatCurrency, formatPercentage, formatNumber } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import Badge from '@/components/ui/Badge';
+import { useUser } from '@/contexts/UserContext';
 
 interface Holding {
   id: string;
@@ -22,30 +23,34 @@ interface Holding {
 }
 
 export default function HoldingsTable() {
+  const { user } = useUser();
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadHoldings();
-    
-    const channel = supabase
-      .channel('portfolio-updates')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'portfolios' },
-        () => loadHoldings()
-      )
-      .subscribe();
+    if (user) {
+      loadHoldings();
+      
+      const channel = supabase
+        .channel('portfolio-updates')
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'portfolios' },
+          () => loadHoldings()
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user]);
 
   const loadHoldings = async () => {
+    if (!user) return;
+    
     try {
       setLoading(true);
-      // TODO: Получать investor_id из контекста/сессии
-      const investorId = 'user-id-placeholder';
+      const investorId = user.id;
 
       const { data: portfolios, error } = await supabase
         .from('portfolios')

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Trophy, TrendingUp, Users, Award } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
@@ -140,12 +139,7 @@ export default function LeaderboardPage() {
         </TableHeader>
         <TableBody>
           {data.map((entry, index) => (
-            <motion.tr
-              key={index}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: index * 0.05 }}
-            >
+            <TableRow key={index}>
               <TableCell>
                 {getRankBadge(entry.rank)}
               </TableCell>
@@ -164,7 +158,7 @@ export default function LeaderboardPage() {
                   +5.2%
                 </TableCell>
               )}
-            </motion.tr>
+            </TableRow>
           ))}
         </TableBody>
       </Table>

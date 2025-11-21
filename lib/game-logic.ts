@@ -2,11 +2,26 @@ import { supabase } from './supabase';
 import type { Skill, Stock, Transaction, Portfolio } from '@/types';
 
 // Расчет цены акции на основе уровня навыка
-export function calculateStockPrice(level: number, experience: number): number {
+export function calculateStockPriceFromLevel(level: number, experience: number): number {
   const basePrice = 10;
   const levelMultiplier = level * 2;
   const experienceBonus = Math.floor(experience / 100);
   return basePrice + levelMultiplier + experienceBonus;
+}
+
+// Расчет цены акции по skillId (для API)
+export async function calculateStockPrice(skillId: string): Promise<number> {
+  const { data: skill, error } = await supabase
+    .from('skills')
+    .select('level, experience')
+    .eq('id', skillId)
+    .single();
+
+  if (error || !skill) {
+    return 10; // Базовая цена по умолчанию
+  }
+
+  return calculateStockPriceFromLevel(skill.level, skill.experience);
 }
 
 // Обновление цен всех акций
@@ -22,7 +37,7 @@ export async function updateStockPrices() {
   }
 
   for (const skill of skills) {
-    const newPrice = calculateStockPrice(skill.level, skill.experience);
+    const newPrice = calculateStockPriceFromLevel(skill.level, skill.experience);
     
     // Получаем текущую цену
     const { data: stock } = await supabase

@@ -10,6 +10,7 @@ import Badge from '@/components/ui/Badge';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/utils';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
+import { useUser } from '@/contexts/UserContext';
 
 interface Skill {
   id: string;
@@ -21,21 +22,29 @@ interface Skill {
 }
 
 export default function SkillsPage() {
+  const { user, loading: userLoading } = useUser();
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newSkillName, setNewSkillName] = useState('');
   const [newSkillDescription, setNewSkillDescription] = useState('');
+  const [selectedSkillForProof, setSelectedSkillForProof] = useState<string | null>(null);
+  const [proofType, setProofType] = useState<'photo' | 'link' | null>(null);
+  const [proofUrl, setProofUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    loadSkills();
-  }, []);
+    if (user) {
+      loadSkills();
+    }
+  }, [user]);
 
   const loadSkills = async () => {
+    if (!user) return;
+    
     try {
       setLoading(true);
-      // TODO: Получать user_id из контекста/сессии
-      const userId = 'user-id-placeholder';
+      const userId = user.id;
 
       const { data, error } = await supabase
         .from('skills')
@@ -72,13 +81,12 @@ export default function SkillsPage() {
   };
 
   const handleAddSkill = async () => {
-    if (!newSkillName.trim()) {
+    if (!newSkillName.trim() || !user) {
       return;
     }
 
     try {
-      // TODO: Получать user_id из контекста/сессии
-      const userId = 'user-id-placeholder';
+      const userId = user.id;
 
       const { error } = await supabase
         .from('skills')
@@ -208,11 +216,27 @@ export default function SkillsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="ghost">
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => {
+                          setSelectedSkillForProof(skill.id);
+                          setProofType('photo');
+                          setProofUrl('');
+                        }}
+                      >
                         <Upload className="w-4 h-4 mr-1" />
                         Upload Proof
                       </Button>
-                      <Button size="sm" variant="ghost">
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => {
+                          setSelectedSkillForProof(skill.id);
+                          setProofType('link');
+                          setProofUrl('');
+                        }}
+                      >
                         <LinkIcon className="w-4 h-4 mr-1" />
                         Add Link
                       </Button>
@@ -223,6 +247,141 @@ export default function SkillsPage() {
             </TableBody>
           </Table>
         </Card>
+      )}
+
+      {/* Модальное окно для загрузки доказательств */}
+      {selectedSkillForProof && proofType && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            setSelectedSkillForProof(null);
+            setProofType(null);
+            setProofUrl('');
+          }}
+        >
+          <motion.div
+            initial={{ scale: 0.9 }}
+            animate={{ scale: 1 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-dark-card rounded-lg p-6 max-w-md w-full"
+          >
+            <h3 className="text-xl font-bold mb-4">
+              {proofType === 'photo' ? 'Upload Proof Photo' : 'Add Proof Link'}
+            </h3>
+            
+            {proofType === 'photo' ? (
+              <div className="space-y-4">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+
+                    setUploading(true);
+                    try {
+                      const fileExt = file.name.split('.').pop();
+                      const fileName = `${selectedSkillForProof}-${Date.now()}.${fileExt}`;
+                      const filePath = `proofs/${fileName}`;
+
+                      const { error: uploadError } = await supabase.storage
+                        .from('proofs')
+                        .upload(filePath, file);
+
+                      if (uploadError) {
+                        console.error('Upload error:', uploadError);
+                        alert('Failed to upload file. Please make sure storage bucket is set up.');
+                        return;
+                      }
+
+                      const { data } = supabase.storage
+                        .from('proofs')
+                        .getPublicUrl(filePath);
+
+                      setProofUrl(data.publicUrl);
+                    } catch (error) {
+                      console.error('Error:', error);
+                      alert('Failed to upload file');
+                    } finally {
+                      setUploading(false);
+                    }
+                  }}
+                  className="block w-full text-sm text-dark-text file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-500 file:text-white hover:file:bg-primary-600"
+                />
+                {proofUrl && (
+                  <div className="p-2 bg-success/10 border border-success/20 rounded text-sm text-success">
+                    File uploaded successfully!
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <Input
+                  type="url"
+                  label="Proof Link"
+                  value={proofUrl}
+                  onChange={(e) => setProofUrl(e.target.value)}
+                  placeholder="https://example.com/proof"
+                />
+              </div>
+            )}
+
+            <div className="flex gap-2 mt-6">
+              <Button
+                variant="primary"
+                className="flex-1"
+                onClick={async () => {
+                  if (!proofUrl || !selectedSkillForProof) return;
+
+                  try {
+                    setUploading(true);
+                    const { error } = await supabase
+                      .from('achievements')
+                      .insert({
+                        skill_id: selectedSkillForProof,
+                        proof_type: proofType,
+                        proof_url: proofUrl,
+                        experience_awarded: 0,
+                        status: 'pending',
+                      });
+
+                    if (error) {
+                      console.error('Error creating achievement:', error);
+                      alert('Failed to submit proof');
+                      return;
+                    }
+
+                    setSelectedSkillForProof(null);
+                    setProofType(null);
+                    setProofUrl('');
+                    alert('Proof submitted successfully! It will be reviewed by moderators.');
+                  } catch (error) {
+                    console.error('Error:', error);
+                    alert('Failed to submit proof');
+                  } finally {
+                    setUploading(false);
+                  }
+                }}
+                disabled={!proofUrl || uploading}
+                isLoading={uploading}
+              >
+                Submit
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setSelectedSkillForProof(null);
+                  setProofType(null);
+                  setProofUrl('');
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </motion.div>
+        </motion.div>
       )}
     </div>
   );

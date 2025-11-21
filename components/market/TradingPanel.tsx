@@ -1,24 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { formatCurrency } from '@/lib/utils';
-import { Zap, Target, AlertTriangle } from 'lucide-react';
+import { Zap, Target, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import Badge from '@/components/ui/Badge';
+import { useUser } from '@/contexts/UserContext';
 
 interface TradingPanelProps {
   skillId?: string;
   currentPrice?: number;
-  balance?: number;
 }
 
 export default function TradingPanel({ 
   skillId, 
-  currentPrice = 140.50,
-  balance = 1000 
+  currentPrice = 140.50
 }: TradingPanelProps) {
+  const { user, refreshUser } = useUser();
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
   const [orderType, setOrderType] = useState<'market' | 'limit' | 'stop'>('limit');
   const [amount, setAmount] = useState('');
@@ -26,9 +26,16 @@ export default function TradingPanel({
   const [stopPrice, setStopPrice] = useState('');
   const [takeProfit, setTakeProfit] = useState('');
   const [stopLoss, setStopLoss] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  useEffect(() => {
+    setPrice(currentPrice.toString());
+  }, [currentPrice]);
+
+  const balance = user?.balance || 0;
   const total = parseFloat(price || '0') * parseFloat(amount || '0');
-  const availableBalance = side === 'buy' ? balance : 0; // TODO: получить реальный баланс
+  const availableBalance = side === 'buy' ? balance : 0;
 
   const handlePercentageClick = (percent: number) => {
     if (orderType === 'market') {
@@ -41,22 +48,55 @@ export default function TradingPanel({
   };
 
   const handleTrade = async () => {
-    if (!skillId || !amount || (orderType !== 'market' && !price)) {
+    if (!skillId || !user || !amount || (orderType !== 'market' && !price)) {
+      setMessage({ type: 'error', text: 'Please fill in all required fields' });
       return;
     }
 
-    // TODO: Реализовать логику покупки/продажи
-    console.log('Trade:', { 
-      side, 
-      orderType,
-      skillId, 
-      amount, 
-      price: orderType === 'market' ? currentPrice : price,
-      total,
-      stopPrice,
-      takeProfit,
-      stopLoss
-    });
+    setIsLoading(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch('/api/trade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          skillId,
+          side,
+          orderType,
+          amount: parseFloat(amount),
+          price: orderType === 'market' ? currentPrice : parseFloat(price),
+          stopPrice: stopPrice ? parseFloat(stopPrice) : undefined,
+          takeProfit: takeProfit ? parseFloat(takeProfit) : undefined,
+          stopLoss: stopLoss ? parseFloat(stopLoss) : undefined,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setMessage({ type: 'success', text: data.message || 'Order executed successfully!' });
+        setAmount('');
+        setPrice(currentPrice.toString());
+        setStopPrice('');
+        setTakeProfit('');
+        setStopLoss('');
+        // Обновляем данные пользователя
+        await refreshUser();
+        // Обновляем страницу через небольшую задержку
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Failed to execute order' });
+      }
+    } catch (error) {
+      console.error('Trade error:', error);
+      setMessage({ type: 'error', text: 'An error occurred. Please try again.' });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -216,13 +256,34 @@ export default function TradingPanel({
           </div>
         </div>
 
+        {/* Сообщения */}
+        {message && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`p-3 rounded-lg flex items-center gap-2 ${
+              message.type === 'success'
+                ? 'bg-success/10 border border-success/20 text-success'
+                : 'bg-danger/10 border border-danger/20 text-danger'
+            }`}
+          >
+            {message.type === 'success' ? (
+              <CheckCircle className="w-4 h-4" />
+            ) : (
+              <XCircle className="w-4 h-4" />
+            )}
+            <span className="text-sm">{message.text}</span>
+          </motion.div>
+        )}
+
         {/* Кнопка торговли */}
         <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
           <Button
             variant={side === 'buy' ? 'success' : 'danger'}
             className="w-full py-4 font-bold"
             onClick={handleTrade}
-            disabled={!amount || (orderType !== 'market' && !price) || total === 0}
+            disabled={!user || isLoading || !amount || (orderType !== 'market' && !price) || total === 0}
+            isLoading={isLoading}
           >
             {orderType === 'market' ? 'Market' : orderType === 'limit' ? 'Limit' : 'Stop'} {side === 'buy' ? 'Buy' : 'Sell'}
           </Button>

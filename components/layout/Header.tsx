@@ -7,17 +7,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/utils';
+import { useUser } from '@/contexts/UserContext';
 
 export default function Header() {
-  const [balance, setBalance] = useState<number>(0);
+  const { user } = useUser();
   const [isLive, setIsLive] = useState(true);
   const pathname = usePathname();
-
-  useEffect(() => {
-    // Загрузка баланса пользователя (пока заглушка)
-    // В реальном приложении нужно получать из контекста или пропсов
-    setBalance(1000);
-  }, []);
+  
+  const balance = user?.balance || 0;
 
   return (
     <header className="glass-effect border-b border-dark-border px-6 py-4">

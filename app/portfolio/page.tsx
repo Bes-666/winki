@@ -10,8 +10,10 @@ import PriceChart from '@/components/market/PriceChart';
 import { formatCurrency, formatPercentage } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { getPortfolioStats } from '@/lib/game-logic';
+import { useUser } from '@/contexts/UserContext';
 
 export default function PortfolioPage() {
+  const { user } = useUser();
   const [stats, setStats] = useState({
     totalValue: 0,
     totalCost: 0,
@@ -21,14 +23,17 @@ export default function PortfolioPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadPortfolioStats();
-  }, []);
+    if (user) {
+      loadPortfolioStats();
+    }
+  }, [user]);
 
   const loadPortfolioStats = async () => {
+    if (!user) return;
+    
     try {
       setLoading(true);
-      // TODO: Получать investor_id из контекста/сессии
-      const investorId = 'user-id-placeholder';
+      const investorId = user.id;
       const portfolioStats = await getPortfolioStats(investorId);
       setStats(portfolioStats);
     } catch (error) {

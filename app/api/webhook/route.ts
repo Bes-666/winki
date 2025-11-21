@@ -82,7 +82,33 @@ async function handleMessage(message: any) {
     await showMarket(chatId);
   } else if (text.startsWith('/leaderboard')) {
     await showLeaderboard(chatId);
+  } else if (text.startsWith('/help')) {
+    await showHelp(chatId);
   }
+}
+
+async function showHelp(chatId: number) {
+  await bot.sendMessage(chatId, `
+📚 <b>SkillStock - Список команд:</b>
+
+<b>Основные команды:</b>
+/start - Начать работу с ботом
+/help - Показать эту справку
+
+<b>Навыки:</b>
+/skills - Показать ваши навыки
+/addskill &lt;название&gt; - Добавить новый навык
+Пример: /addskill Python
+
+<b>Торговля:</b>
+/portfolio - Показать ваш портфель инвестиций
+/market - Показать топ навыков на рынке
+
+<b>Рейтинг:</b>
+/leaderboard - Показать рейтинг инвесторов
+
+💡 <b>Совет:</b> Используйте веб-интерфейс для более удобной торговли и просмотра графиков!
+  `, { parse_mode: 'HTML' });
 }
 
 async function showSkills(chatId: number, userId: string) {
