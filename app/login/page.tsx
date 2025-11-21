@@ -210,8 +210,9 @@ function LoginForm() {
                   variant="outline"
                   className="w-full"
                   onClick={() => {
-                    // TODO: Редирект на регистрацию или Telegram бота
-                    window.open('https://t.me/your_bot', '_blank');
+                    // Пользователь должен найти бота через поиск в Telegram
+                    // или использовать ссылку, которую предоставит администратор
+                    alert('Пожалуйста, найдите нашего бота в Telegram через поиск или обратитесь к администратору за ссылкой.');
                   }}
                 >
                   Get Started via Telegram
