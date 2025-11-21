@@ -6,57 +6,74 @@ import { addExperience } from '@/lib/game-logic';
 export async function POST(request: NextRequest) {
   try {
     const update = await request.json();
+    
+    console.log('Webhook received:', JSON.stringify(update, null, 2));
 
     if (update.message) {
       await handleMessage(update.message);
+    } else {
+      console.log('No message in update:', update);
     }
 
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Webhook error:', error);
+    console.error('Error details:', error instanceof Error ? error.message : String(error));
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 async function handleMessage(message: any) {
-  const chatId = message.chat.id;
-  const text = message.text || '';
-  const userId = message.from.id;
-  const username = message.from.username;
-  const firstName = message.from.first_name;
+  try {
+    const chatId = message.chat.id;
+    const text = message.text || '';
+    const userId = message.from.id;
+    const username = message.from.username;
+    const firstName = message.from.first_name;
 
-  // Регистрация пользователя
-  let user;
-  const { data: existingUser } = await supabase
-    .from('users')
-    .select('*')
-    .eq('telegram_id', userId)
-    .single();
+    console.log(`Processing message from user ${userId} (@${username}): ${text}`);
 
-  if (!existingUser) {
-    const { data: newUser, error } = await supabase
+    // Регистрация пользователя
+    let user;
+    const { data: existingUser, error: fetchError } = await supabase
       .from('users')
-      .insert({
-        telegram_id: userId,
-        username: username,
-        first_name: firstName,
-        balance: 1000,
-      })
-      .select()
+      .select('*')
+      .eq('telegram_id', userId)
       .single();
 
-    if (error) {
-      console.error('Error creating user:', error);
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error('Error fetching user:', fetchError);
+      await bot.sendMessage(chatId, '❌ Ошибка при загрузке данных. Попробуйте позже.');
       return;
     }
-    user = newUser;
-  } else {
-    user = existingUser;
-  }
 
-  // Обработка команд
-  if (text.startsWith('/start')) {
-    await bot.sendMessage(chatId, `
+    if (!existingUser) {
+      const { data: newUser, error: insertError } = await supabase
+        .from('users')
+        .insert({
+          telegram_id: userId,
+          username: username,
+          first_name: firstName,
+          balance: 1000,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Error creating user:', insertError);
+        await bot.sendMessage(chatId, '❌ Ошибка при регистрации. Попробуйте позже.');
+        return;
+      }
+      user = newUser;
+      console.log('New user created:', user.id);
+    } else {
+      user = existingUser;
+      console.log('Existing user found:', user.id);
+    }
+
+    // Обработка команд
+    if (text.startsWith('/start')) {
+      await bot.sendMessage(chatId, `
 🎮 Добро пожаловать в SkillStock!
 
 📈 Инвестируйте в навыки друзей и зарабатывайте!
@@ -68,22 +85,35 @@ async function handleMessage(message: any) {
 /market - Рынок навыков
 /leaderboard - Рейтинг
 /help - Помощь
-    `);
-  } else if (text.startsWith('/skills')) {
-    await showSkills(chatId, user.id);
-  } else if (text.startsWith('/addskill')) {
-    const skillName = text.replace('/addskill', '').trim();
-    if (skillName) {
-      await addSkill(chatId, user.id, skillName);
+      `);
+    } else if (text.startsWith('/skills')) {
+      await showSkills(chatId, user.id);
+    } else if (text.startsWith('/addskill')) {
+      const skillName = text.replace('/addskill', '').trim();
+      if (skillName) {
+        await addSkill(chatId, user.id, skillName);
+      } else {
+        await bot.sendMessage(chatId, '❌ Укажите название навыка. Пример: /addskill Python');
+      }
+    } else if (text.startsWith('/portfolio')) {
+      await showPortfolio(chatId, user.id);
+    } else if (text.startsWith('/market')) {
+      await showMarket(chatId);
+    } else if (text.startsWith('/leaderboard')) {
+      await showLeaderboard(chatId);
+    } else if (text.startsWith('/help')) {
+      await showHelp(chatId);
+    } else if (text.trim()) {
+      // Если сообщение не команда, отправляем подсказку
+      await bot.sendMessage(chatId, '❓ Неизвестная команда. Используйте /help для списка команд.');
     }
-  } else if (text.startsWith('/portfolio')) {
-    await showPortfolio(chatId, user.id);
-  } else if (text.startsWith('/market')) {
-    await showMarket(chatId);
-  } else if (text.startsWith('/leaderboard')) {
-    await showLeaderboard(chatId);
-  } else if (text.startsWith('/help')) {
-    await showHelp(chatId);
+  } catch (error) {
+    console.error('Error handling message:', error);
+    try {
+      await bot.sendMessage(message.chat.id, '❌ Произошла ошибка. Попробуйте позже или используйте /help');
+    } catch (sendError) {
+      console.error('Error sending error message:', sendError);
+    }
   }
 }
 
